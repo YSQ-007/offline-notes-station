@@ -1,0 +1,35 @@
+name: Build Windows EXE
+
+# 触发：推送到 main 分支，或手动触发（Actions 页面点 Run workflow）
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller pywebview pythonnet
+          python -m pip install -r requirements.txt
+
+      - name: Build with PyInstaller
+        shell: pwsh
+        run: python -m PyInstaller --noconfirm desktop_notes.spec
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LocalNotesStation-exe
+          path: dist/LocalNotesStation.exe
+          if-no-files-found: error

@@ -1,0 +1,9 @@
+# 速查：常用命令速查
+
+下面是一些日常使用的命令速查，供快速查阅（示例，替换为你自己的内容）。
+
+- grep -i "pattern" file.txt    # 忽略大小写搜索
+- curl -sS http://example.com    # 带错误信息抓取
+- tar -xzf archive.tar.gz -C /opt
+- systemctl status nginx
+- chmod +x ./run.sh

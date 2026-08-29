@@ -1,0 +1,14 @@
+# 数据/运行时产物不入库
+__pycache__/
+*.pyc
+notes.db
+uploads/
+desktop_error.log
+
+# 构建产物
+build/
+dist/
+
+# 系统
+.DS_Store
+Thumbs.db

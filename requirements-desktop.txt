@@ -1,0 +1,6 @@
+# 桌面版可选依赖（二选一装其一即可）：
+#   - pywebview：WebView2 桌面窗口，复用网页版全部 UI（_desktop_webview.py）
+#   - tkinterweb：tkinter 精简阅读器（desktop_app.py，未装会自动降级为纯文本）
+# 手机 / 网页版无需安装本文件。
+pywebview>=5.0
+tkinterweb==4.25.3

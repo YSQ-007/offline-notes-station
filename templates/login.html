@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ '设置密码' if not has_password else '登录' }} · 本地学习笔记站</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+    }
+    .login-card {
+      width: 380px;
+      max-width: 92vw;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.14);
+      padding: 36px 32px 28px;
+    }
+    .login-card .logo { font-size: 34px; display: block; text-align: center; margin-bottom: 6px; }
+    .login-card h1 { font-size: 18px; text-align: center; margin-bottom: 4px; }
+    .login-card .sub { text-align: center; color: var(--text-muted); font-size: 12px; margin-bottom: 22px; }
+    .login-card .field { margin-bottom: 14px; }
+    .login-card input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .login-card input[type="password"]:focus { border-color: var(--accent); }
+    .login-card button[type="submit"] {
+      width: 100%;
+      padding: 10px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .login-card button[type="submit"]:hover { opacity: .92; }
+    .login-card .msg {
+      margin: 12px 0 0;
+      padding: 8px 10px;
+      border-radius: var(--radius);
+      font-size: 12.5px;
+      display: none;
+    }
+    .login-card .msg.error { display: block; background: var(--danger-soft); color: var(--danger); }
+    .login-card .msg.ok { display: block; background: var(--accent-soft); color: var(--accent-text); }
+    .login-card .msg.locked { display: block; background: var(--danger-soft); color: var(--danger); }
+    .login-card .hint { text-align: center; color: var(--text-muted); font-size: 11px; margin-top: 16px; }
+    #countdown { font-weight: 600; }
+
+    /* 忘记密码 */
+    .forgot-row { text-align: center; margin-top: 12px; }
+    .forgot-row a { color: var(--text-muted); font-size: 12px; text-decoration: none; }
+    .forgot-row a:hover { color: var(--accent-text); text-decoration: underline; }
+    .reset-guide {
+      margin-top: 10px;
+      padding: 12px 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.7;
+      text-align: left;
+    }
+    .reset-guide h2 { font-size: 13px; margin: 0 0 6px; color: var(--accent-text); }
+    .reset-guide p { margin: 6px 0; }
+    .reset-guide ol { margin: 6px 0 6px 18px; padding: 0; }
+    .reset-guide li { margin: 4px 0; }
+    .reset-guide code {
+      background: var(--code-bg);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 11.5px;
+      word-break: break-all;
+    }
+    .login-card .sec-field {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      box-sizing: border-box;
+      width: 100%;
+    }
+    .login-card select.sec-field:focus, .login-card input.sec-field:focus { border-color: var(--accent); }
+    .login-card .sec-tip { color: var(--text-muted); font-size: 11.5px; margin: -8px 0 0; line-height: 1.6; }
+    .lan-tip {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      word-break: break-all;
+    }
+    .lan-tip code {
+      background: var(--code-bg);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+    }
+    @media (max-width: 768px) {
+      .login-card { padding: 28px 20px 22px; }
+      .login-card input[type="password"], .login-card .sec-field { min-height: 48px; font-size: 16px; }
+      .login-card button[type="submit"] { min-height: 48px; font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <span class="logo">📓</span>
+    <h1 id="title">{{ '🔒 首次使用，设置密码' if not has_password else '🔒 授权登录' }}</h1>
+    <p class="sub" id="sub">{{ '设置后，任何人访问本笔记站都需要输入密码' if not has_password else '输入密码进入你的本地笔记站' }}</p>
+
+    <form id="loginForm" autocomplete="off">
+      <label class="field">
+        <span>{{ '设置密码（4-128 字符）' if not has_password else '密码' }}</span>
+        <input type="password" id="password" required minlength="4" maxlength="128" autofocus
+               placeholder="{{ '设置你的访问密码' if not has_password else '输入密码' }}">
+      </label>
+
+      {% if not has_password %}
+      <label class="field">
+        <span>密保问题（用于登录后修改密码）</span>
+        <select class="sec-field" id="secQuestion">
+          <option value="">请选择…</option>
+          {% for q in security_questions %}
+          <option value="{{ q }}">{{ q }}</option>
+          {% endfor %}
+          <option value="__custom__">✎ 自定义问题…</option>
+        </select>
+      </label>
+      <label class="field" id="secCustomField" style="display:none;">
+        <span>自定义密保问题</span>
+        <input type="text" class="sec-field" id="secQuestionCustom" maxlength="80"
+               placeholder="例如：我的第一辆自行车是什么颜色">
+      </label>
+      <label class="field">
+        <span>密保答案（2-128 字符，请牢记）</span>
+        <input type="text" class="sec-field" id="secAnswer" maxlength="128"
+               placeholder="填写答案，如：红岗小学">
+      </label>
+      <p class="sec-tip">此后登录后修改密码时，需同时提供原密码与该答案。</p>
+      {% endif %}
+
+      <button type="submit" id="submitBtn">{{ '设置并进入' if not has_password else '登 录' }}</button>
+    </form>
+
+    <!-- 忘记密码：仅指引如何手动重置（本地离线应用，无远程重置能力） -->
+    {% if has_password %}
+    <div class="forgot-row">
+      <a href="javascript:void(0)" id="forgotToggle">忘记密码？</a>
+    </div>
+    <div class="reset-guide" id="resetGuide" style="display:none;">
+      <h2>重置密码指引</h2>
+      <p>本应用为纯本地离线应用，密码以哈希形式存于本地数据库 <code>notes.db</code>，无法通过互联网找回。</p>
+      <p>如需重置，请按以下步骤操作：</p>
+      <ol>
+        <li>关闭笔记站应用（含桌面版与浏览器页面）。</li>
+        <li>打开数据目录，用 SQLite 工具（如 <code>DB Browser</code>、<code>python sqlite3</code>）打开 <code>notes.db</code>。</li>
+        <li>执行：<code>DELETE FROM app_settings WHERE key IN ('password_salt','password_hash');</code></li>
+        <li>重新启动应用，会重新进入「首次设置密码」引导。</li>
+      </ol>
+      <p class="guide-note">提示：删除后原有笔记数据不受影响，仅密码被清空。</p>
+    </div>
+    {% endif %}
+
+    <div class="msg" id="msg"></div>
+    {% if lan_url %}
+    <p class="lan-tip">📱 手机访问（同一 WiFi）：<code>{{ lan_url }}</code></p>
+    {% endif %}
+    <div class="hint">{{ '本机离线应用，数据不会上传到任何服务器' }}</div>
+  </div>
+
+  <script>
+    const NEED_SETUP = {{ 'true' if not has_password else 'false' }};
+    const msgEl = document.getElementById('msg');
+    const submitBtn = document.getElementById('submitBtn');
+    let lockTimer = null;
+
+    // 忘记密码指引展开/收起（仅登录模式存在该元素）
+    const forgotToggle = document.getElementById('forgotToggle');
+    const resetGuide = document.getElementById('resetGuide');
+    if (forgotToggle && resetGuide) {
+      forgotToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        const hidden = resetGuide.style.display === 'none';
+        resetGuide.style.display = hidden ? 'block' : 'none';
+        forgotToggle.textContent = hidden ? '收起指引' : '忘记密码？';
+      });
+    }
+
+    function showMsg(text, kind) {
+      msgEl.className = 'msg ' + (kind || 'error');
+      msgEl.textContent = text;
+    }
+    function clearMsg() { msgEl.className = 'msg'; msgEl.textContent = ''; }
+
+    // 自定义密保问题切换
+    const secQuestion = document.getElementById('secQuestion');
+    const secCustomField = document.getElementById('secCustomField');
+    if (secQuestion && secCustomField) {
+      secQuestion.addEventListener('change', () => {
+        const show = secQuestion.value === '__custom__';
+        secCustomField.style.display = show ? 'block' : 'none';
+        if (show) document.getElementById('secQuestionCustom').focus();
+      });
+    }
+
+    // 每 1 秒轮询锁定状态：解除后自动可重试
+    async function pollStatus() {
+      try {
+        const r = await fetch('/api/auth/status');
+        const s = await r.json();
+        if (s.authed) { location.href = '/'; return; }
+        if (s.locked_seconds > 0) {
+          startLockCountdown(s.locked_seconds);
+        } else {
+          clearLockCountdown();
+          if (lockTimer) { clearInterval(lockTimer); lockTimer = null; }
+        }
+      } catch (e) {}
+    }
+
+    function startLockCountdown(seconds) {
+      if (lockTimer) clearInterval(lockTimer);
+      const end = Date.now() + seconds * 1000;
+      const tick = () => {
+        const remain = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+        submitBtn.disabled = true;
+        submitBtn.textContent = `已锁定 ${remain} 秒`;
+        if (remain <= 0) {
+          clearInterval(lockTimer);
+          lockTimer = null;
+          submitBtn.disabled = false;
+          submitBtn.textContent = NEED_SETUP ? '设置并进入' : '登 录';
+          showMsg('锁定已解除，请重试', 'ok');
+          setTimeout(clearMsg, 3000);
+        }
+      };
+      tick();
+      lockTimer = setInterval(tick, 1000);
+    }
+    function clearLockCountdown() {
+      submitBtn.disabled = false;
+      submitBtn.textContent = NEED_SETUP ? '设置并进入' : '登 录';
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearMsg();
+      const pw = document.getElementById('password').value;
+      const url = NEED_SETUP ? '/api/setup-password' : '/api/login';
+      const body = { password: pw };
+      if (NEED_SETUP) {
+        // 组装密保问题（支持自定义）
+        const sel = document.getElementById('secQuestion');
+        let q = sel.value;
+        if (q === '__custom__') {
+          q = document.getElementById('secQuestionCustom').value.trim();
+        }
+        body.security_question = q;
+        body.security_answer = document.getElementById('secAnswer').value.trim();
+      }
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          showMsg(NEED_SETUP ? '密码设置成功！' : '登录成功！正在进入…', 'ok');
+          setTimeout(() => { location.href = '/'; }, 500);
+          return;
+        }
+        if (data.locked_seconds > 0) {
+          showMsg(data.error || '已锁定', 'locked');
+          startLockCountdown(data.locked_seconds);
+        } else if (data.need_setup) {
+          location.reload();
+        } else {
+          showMsg(data.error || '操作失败');
+        }
+      } catch (err) {
+        showMsg('网络错误：' + err.message);
+      }
+    });
+
+    // 已登录直接进站
+    pollStatus();
+  </script>
+</body>
+</html>

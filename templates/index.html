@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>本地学习笔记站</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">📓</span>
+      <span class="title">本地学习笔记站</span>
+    </div>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="搜索标题 / 标签 / 内容…" autocomplete="off">
+      <button id="searchBtn" title="搜索">🔍</button>
+    </div>
+    <div class="actions">
+      <button id="foldSidebarBtn" title="收起/展开目录栏">📁 ⇄</button>
+      <button id="newFolderBtn" title="新建目录"><span class="btn-ico">＋</span><span class="btn-lbl">目录</span></button>
+      <button id="newNoteBtn" title="新建笔记"><span class="btn-ico">＋</span><span class="btn-lbl">笔记</span></button>
+      <button id="uploadBtn" title="上传资料"><span class="btn-ico">⬆</span><span class="btn-lbl">上传</span></button>
+      <button id="exportBtn" title="导出备份"><span class="btn-ico">⤓</span><span class="btn-lbl">导出</span></button>
+      <button id="modifyPwBtn" title="修改密码">🔑</button>
+      <button id="themeBtn" title="切换深色">🌗</button>
+      <button id="logoutBtn" title="退出登录">🚪<span class="btn-lbl">退出</span></button>
+    </div>
+  </header>
+
+  <!-- 未设置密保时的补录引导条 -->
+  <div class="sec-banner" id="secBanner" style="display:none;">
+    <span>⚠️ 尚未设置密保问题——登录后修改密码需「原密码 + 密保答案」双重验证，建议立即补录。</span>
+    <button type="button" class="btn-ghost" id="secBannerGo">去补录</button>
+    <button type="button" class="link-btn" id="secBannerLater">稍后</button>
+  </div>
+
+  <main class="layout" id="layout">
+    <!-- 左侧目录树 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <span>资料目录</span>
+        <button class="link-btn" id="newFolderBtn2" title="新建目录">＋</button>
+      </div>
+      <div class="tree" id="tree"></div>
+      <div class="sidebar-foot">
+        <div id="tagCloud"></div>
+      </div>
+    </aside>
+    <div class="resizer" data-resize="sidebar"></div>
+
+    <!-- 右侧内容区 -->
+    <section class="reader" id="reader">
+      <div class="reader-empty" id="readerEmpty">
+        <div class="empty-icon">📂</div>
+        <p>从左侧选择一份资料开始阅读</p>
+        <p class="empty-hint">或点击「上传」添加你的笔记</p>
+      </div>
+      <div class="reader-content" id="readerContent" style="display:none;">
+        <div class="doc-head">
+          <h2 id="docTitle"></h2>
+          <div class="doc-meta">
+            <span id="docType" class="badge"></span>
+            <span id="docTags"></span>
+            <span id="docDate"></span>
+            <span class="doc-ops">
+              <button class="link-btn" id="editDocBtn" title="编辑信息（标题/标签/渲染）">⚙ 信息</button>
+              <button class="link-btn" id="editContentBtn" title="编辑 txt/md 正文内容">✍ 编辑内容</button>
+              <button class="link-btn" id="noteToggleBtn" title="打开/收起右侧备注栏">💬 备注</button>
+              <button class="link-btn danger" id="delDocBtn" title="删除">🗑 删除</button>
+            </span>
+          </div>
+        </div>
+        <div class="doc-body" id="docBody"></div>
+      </div>
+    </section>
+    <div class="resizer" data-resize="note"></div>
+
+    <!-- 右侧备注栏 -->
+    <aside class="note-panel" id="notePanel">
+      <div class="note-panel-head">
+        <span>我的备注</span>
+        <button class="link-btn" id="noteCloseBtn" title="收起备注栏">✕</button>
+      </div>
+      <div class="note-panel-body" id="notePanelBody">
+        <div class="note-empty" id="noteEmpty">选择一篇文档后，在此记录个人备注。</div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- 移动端抽屉遮罩（点击收起目录抽屉） -->
+  <div class="drawer-mask" id="drawerMask"></div>
+
+  <!-- 上传对话框 -->
+  <div class="modal" id="uploadModal" style="display:none;">
+    <div class="modal-box">
+      <div class="modal-head">上传资料</div>
+      <form id="uploadForm">
+        <label class="field">
+          <span>选择文件</span>
+          <input type="file" name="file" required
+                 accept=".txt,.md,.markdown,.html,.htm,.pdf">
+          <small class="hint">支持 .txt / .md / .html / .pdf</small>
+        </label>
+        <label class="field">
+          <span>标题（可选，默认用文件名）</span>
+          <input type="text" name="title" placeholder="给这份资料起个名字">
+        </label>
+        <label class="field">
+          <span>归入目录</span>
+          <select name="folder_id" id="uploadFolderSel">
+            <option value="">（未分类）</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>标签</span>
+          <div class="tag-editor">
+            <div class="tag-chips" id="chipsUpload"></div>
+            <input type="hidden" name="tags" id="uploadTags">
+            <input type="text" class="tag-input" id="tagInputUpload" placeholder="输入后回车添加，如 运维、速查" autocomplete="off">
+          </div>
+        </label>
+        <label class="field">
+          <span>渲染模式（HTML 生效）</span>
+          <select name="render_mode" id="uploadRenderMode">
+            <option value="sanitize">消毒模式（安全，脚本不执行）</option>
+            <option value="raw">原始模式（完整显示 SPA/脚本页面，信任文件时选）</option>
+          </select>
+        </label>
+        <div class="modal-foot">
+          <button type="button" class="btn-ghost" data-close>取消</button>
+          <button type="submit" class="btn-primary">上传</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 新建目录对话框 -->
+  <div class="modal" id="folderModal" style="display:none;">
+    <div class="modal-box">
+      <div class="modal-head" id="folderModalTitle">新建目录</div>
+      <form id="folderForm">
+        <label class="field">
+          <span>目录名</span>
+          <input type="text" name="name" required placeholder="例如：运维笔记">
+        </label>
+        <label class="field">
+          <span>父目录</span>
+          <select name="parent_id" id="folderParentSel">
+            <option value="">（根目录）</option>
+          </select>
+        </label>
+        <div class="modal-foot">
+          <button type="button" class="btn-ghost" data-close>取消</button>
+          <button type="submit" class="btn-primary">确定</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 编辑文档对话框 -->
+  <div class="modal" id="editModal" style="display:none;">
+    <div class="modal-box">
+      <div class="modal-head">编辑资料</div>
+      <form id="editForm">
+        <input type="hidden" name="did" id="editDid">
+        <label class="field">
+          <span>标题</span>
+          <input type="text" name="title" id="editTitle" required>
+        </label>
+        <label class="field">
+          <span>归入目录</span>
+          <select name="folder_id" id="editFolderSel">
+            <option value="">（未分类）</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>标签</span>
+          <div class="tag-editor">
+            <div class="tag-chips" id="chipsEdit"></div>
+            <input type="hidden" name="tags" id="editTags">
+            <input type="text" class="tag-input" id="tagInputEdit" placeholder="输入后回车添加，如 运维、速查" autocomplete="off">
+          </div>
+        </label>
+        <label class="field">
+          <span>渲染模式（HTML 生效）</span>
+          <select name="render_mode" id="editRenderMode">
+            <option value="sanitize">消毒模式（安全，脚本不执行）</option>
+            <option value="raw">原始模式（完整显示 SPA/脚本页面，信任文件时选）</option>
+          </select>
+        </label>
+        <div class="modal-foot">
+          <button type="button" class="btn-ghost" data-close>取消</button>
+          <button type="submit" class="btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 新建笔记对话框 -->
+  <div class="modal" id="noteModal" style="display:none;">
+    <div class="modal-box modal-box-wide">
+      <div class="modal-head">新建笔记</div>
+      <form id="noteForm">
+        <div class="note-field-row">
+          <label class="field">
+            <span>标题</span>
+            <input type="text" name="title" id="noteTitle" required placeholder="给笔记起个标题">
+          </label>
+          <label class="field note-type">
+            <span>格式</span>
+            <select name="file_type" id="noteType">
+              <option value=".md">Markdown (.md)</option>
+              <option value=".txt">纯文本 (.txt)</option>
+            </select>
+          </label>
+          <label class="field note-folder">
+            <span>目录</span>
+            <select name="folder_id" id="noteFolderSel">
+              <option value="">（未分类）</option>
+            </select>
+          </label>
+        </div>
+        <label class="field">
+          <span>内容 (支持 Markdown 语法)</span>
+          <textarea name="content" id="noteContent" rows="12" placeholder="在此输入内容，支持 Markdown 语法…"></textarea>
+        </label>
+        <label class="field">
+          <span>标签</span>
+          <div class="tag-editor">
+            <div class="tag-chips" id="chipsNote"></div>
+            <input type="hidden" name="tags" id="noteTags">
+            <input type="text" class="tag-input" id="tagInputNote" placeholder="输入后回车添加，如 运维、速查" autocomplete="off">
+          </div>
+        </label>
+        <div class="modal-foot">
+          <button type="button" class="btn-ghost" data-close>取消</button>
+          <button type="submit" class="btn-primary">新建</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 修改密码（登录态内，需原密码 + 密保答案双验证） -->
+  <div class="modal" id="modifyPwModal" style="display:none;">
+    <div class="modal-box">
+      <h3>🔑 修改密码</h3>
+      <p class="field-hint">修改密码需通过「原密码 + 密保答案」双重验证，成功后将重新登录。</p>
+      <label class="field">
+        <span>原密码</span>
+        <input type="password" id="pwOld" autocomplete="current-password" maxlength="128">
+      </label>
+      <label class="field">
+        <span>新密码（4-128 字符）</span>
+        <input type="password" id="pwNew" autocomplete="new-password" maxlength="128">
+      </label>
+      <label class="field">
+        <span>确认新密码</span>
+        <input type="password" id="pwNew2" autocomplete="new-password" maxlength="128">
+      </label>
+      <div class="field">
+        <span>密保答案：<b id="secQShow"></b></span>
+        <input type="text" id="pwSecAnswer" autocomplete="off" maxlength="128"
+               placeholder="回答密保问题">
+      </div>
+      <p class="field-hint" id="pwSecHint"></p>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" data-close>取消</button>
+        <button type="button" class="btn-ghost" id="goSetSecBtn">去补录/修改密保</button>
+        <button type="button" class="btn-primary" id="pwSubmit">确认修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 补录/修改密保（需验证原密码） -->
+  <div class="modal" id="securitySetModal" style="display:none;">
+    <div class="modal-box">
+      <h3 id="secSetTitle">🛡 设置密保</h3>
+      <p class="field-hint">补录后，登录修改密码需「原密码 + 密保答案」双验证；密保答案仅以加盐哈希保存，请牢记。</p>
+      <label class="field">
+        <span>原密码</span>
+        <input type="password" id="secSetOld" autocomplete="current-password" maxlength="128">
+      </label>
+      <label class="field" id="secSetOldSecField" style="display:none;">
+        <span>旧密保答案（更换密保时需验证）</span>
+        <input type="text" id="secSetOldSec" autocomplete="off" maxlength="128" placeholder="回答当前密保问题">
+      </label>
+      <label class="field">
+        <span>密保问题</span>
+        <select id="secSetQuestion">
+          <option value="">请选择…</option>
+          {% for q in security_questions %}
+          <option value="{{ q }}">{{ q }}</option>
+          {% endfor %}
+          <option value="__custom__">✎ 自定义问题…</option>
+        </select>
+      </label>
+      <label class="field" id="secSetCustomField" style="display:none;">
+        <span>自定义密保问题</span>
+        <input type="text" id="secSetQuestionCustom" maxlength="80" placeholder="例如：我的第一辆自行车是什么颜色">
+      </label>
+      <label class="field">
+        <span>密保答案（2-128 字符）</span>
+        <input type="text" id="secSetAnswer" maxlength="128">
+      </label>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" data-close>取消</button>
+        <button type="button" class="btn-primary" id="secSetSubmit">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/static/vendor/editor.bundle.js"></script>
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
